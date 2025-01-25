@@ -1,0 +1,9 @@
+push 20
+push 80
+Add
+Push 15
+Push 5
+Add
+Div
+Out
+Hlt
