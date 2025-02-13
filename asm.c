@@ -37,12 +37,13 @@ int main() {
     FILE *f2 = fopen("second.txt", "w");
     if (f2 == NULL)
     {
-        printf("f2 == null"); // TODO close f1
+        printf("f2 == null"); 
+        fclose(f1);
         fclose(f2);
         assert(0);
     }
 
-    
+
 
      while(1)
     {
