@@ -9,7 +9,8 @@ enum command
     DIV = 4,
     MUL = 5,
     OUT = 6,
-    PUSH_REG = 11,
+
+    PUSHR = 11,
 
     HLT = -1,
 };

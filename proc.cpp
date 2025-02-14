@@ -213,10 +213,10 @@ int main ()
 
     stack_constructor(&stk, 10);
 
-    FILE *f2 = fopen("second.txt", "r");
+    FILE *f2 = fopen("code.txt", "r");
     if (f2 == NULL)
     {
-        printf("f1 == null");
+        printf("f2 == null");
         assert(0);
     }
 
