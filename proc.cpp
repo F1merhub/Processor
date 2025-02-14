@@ -5,14 +5,20 @@
 #include "proc.h"
 #include "asm.h"
 
-typedef int stack_elem;
-
+typedef int stack_elem;   // NOTE заменил double на int
+// TODO сделать typedef для спецификаторов
 struct stack
 {
     stack_elem* data;
     int size;
     int capacity;
 };
+
+const int increase_coefficient = 20;
+
+const stack_elem CANARY = (stack_elem)0xBADC0FFEE;
+
+const stack_elem POISON = (stack_elem)0xBAD1ABA;
 
 enum errorcode
 {
@@ -22,18 +28,12 @@ enum errorcode
     STK_BAD_SIZE =                  3,  // size < 0
     STK_BAD_CAPACITY =              4,  // capacity <= 0
     STK_SIZE_LARGER_CAPACITY =      5,  // вышли за размер стэка
-    // REALLOCK_FAIL =              6,  // не получилось расширить стэк
     BAD_CANARY_1 =                  7,  // левая канарейка
     BAD_CANARY_2 =                  8,  // правая канарейка
 };
 
-const stack_elem CANARY = (stack_elem)0xBADC0FFEE;
-
-const stack_elem POISON = (stack_elem)0xBAD1ABA;
-
 int verificator(struct stack *stk)
 {
-
     int error = 0;
 
     if (stk == NULL)
@@ -61,35 +61,50 @@ int verificator(struct stack *stk)
 }
 
 const char* decoder(int error) {
-
-    if (error == STK_OUT_MEMORY)
-        return "memory allocation error\n";
-    if (error == STK_NULL_POINTER)
-        return "stack pointer is null\n";
-    if (error == STK_BAD_SIZE)
-        return "stack size < 0\n";
-    if (error == STK_BAD_CAPACITY)
-        return "stack capacity <= 0\n";
-    if (error == STK_SIZE_LARGER_CAPACITY)
-        return "size > capacity\n";
-    if (error == BAD_CANARY_1)
-        return "canary1 was changed\n";
-    if (error == BAD_CANARY_2)
-        return "canary2 was changed\n";
-
-    };
-
-
-void stk_assert(struct stack *stk) {
-    int error = verificator(stk);
-    if (error) {
-        printf("%s", decoder(error));
-        assert(0);
+    switch(error) {
+        case(STK_OUT_MEMORY):
+            return "memory allocation error\n";
+        case(STK_NULL_POINTER):
+            return "stack pointer is null\n";
+        case(STK_BAD_SIZE):
+            return "stack size < 0\n";
+        case(STK_BAD_CAPACITY):
+            return "stack capacity <= 0\n";
+        case(STK_SIZE_LARGER_CAPACITY):
+            return "size > capacity\n";
+        case(BAD_CANARY_1):
+            return "canary1 was changed\n";
+        case(BAD_CANARY_2):
+            return "canary2 was changed\n";
+        default:
+            return "unknown error\n";
     }
 }
 
+int stack_dump(struct stack *stk) {
+    for (int i = 1; i < (stk->size) + 1; ++i) {
+        printf("%d ", stk->data[i]);
+    }
+    printf("\n"
+           "%d - capacity\n"
+           "%d - size\n"
+           "%p - pointer on data\n",
+           stk->capacity, stk->size, stk->data);
+    return 0;
+}
 
-int stk_null_check(struct stack *stk) {  // много раз встречается
+int stk_assert(struct stack *stk) {
+    int error = verificator(stk);
+    if (error) {
+        printf("%s", decoder(error));
+        stack_dump(stk);
+        assert(0);
+    }
+    return 0;
+}
+
+
+int stk_null_check(struct stack *stk) {
     if (stk == NULL) {
         printf("stk pointer is NULL\n");
         assert(0);
@@ -97,7 +112,8 @@ int stk_null_check(struct stack *stk) {  // много раз встречает
     return 0;
 }
 
-int put_canary(struct stack *stk) {
+int put_canary(struct stack *stk)
+{
     stk_null_check(stk);
     stk->data[0] = CANARY;
     stk->data[stk->capacity + 1] = CANARY;
@@ -108,7 +124,7 @@ int put_canary(struct stack *stk) {
 
 int stack_destructor(struct stack* stk) {
     stk_null_check(stk);
-    for (int i = 0; i < stk ->capacity + 1; ++i)
+    for (int i = 0; i < stk->capacity + 1; ++i)
         stk->data[i] = POISON;
     free(stk->data);
     stk->data = NULL;
@@ -129,7 +145,7 @@ int stack_constructor(struct stack * stk, int capacity) {
     }
 
     stk->data = (stack_elem *)calloc(capacity + 2, sizeof(stack_elem));
-    if (&stk == NULL) {
+    if (stk->data == NULL) {
         printf("memory allocation error\n");
         assert(0);
     }
@@ -137,17 +153,34 @@ int stack_constructor(struct stack * stk, int capacity) {
     stk->size = 0;
     stk->capacity = capacity;
     put_canary(stk);
-    // stk_assert(stk);
+    stk_assert(stk);
 
     return 0;
 }
 
+int realloc_up(struct stack *stk) {
+    stk_assert(stk);
+    if (increase_coefficient <= 0) {
+        printf("change increase_coefficient\n");
+        assert(0);
+    }
+    stack_elem *new_ptr = (stack_elem *)realloc(stk->data, (stk -> capacity + 2 + increase_coefficient) * sizeof(stack_elem));
+    if(new_ptr == NULL) {
+        printf("memory reallocation error\n");
+        assert(0);
+    }
+    stk->data = new_ptr;
+    stk->capacity = stk->capacity + increase_coefficient;
+    stk->data[stk->capacity + 1] = CANARY;
+    return 0;
+}
 
-int stack_push(struct stack*stk, stack_elem value) {  // добавить с реалоком
+
+
+int stack_push(struct stack *stk, stack_elem value) {
     stk_assert(stk);
     if (stk->size  == stk->capacity) {
-        printf("size bigger than capacity\n");
-        assert(0);
+        realloc_up(stk);
     }
 
     stk->data[stk->size + 1] = value;
@@ -157,8 +190,7 @@ int stack_push(struct stack*stk, stack_elem value) {  // добавить с р�
     return 0;
 }
 
-
-int stack_pop(struct stack*stk, stack_elem *pop_elem) { // добавить реаллок вниз
+int stack_pop(struct stack *stk, stack_elem *pop_elem) { // NOTE добавить реаллок вниз
     stk_assert(stk);
     if (stk->size  == 0) {
         printf("empty stack\n");
@@ -172,20 +204,6 @@ int stack_pop(struct stack*stk, stack_elem *pop_elem) { // добавить ре
     return 0;
 }
 
-
-int stack_dump(struct stack*stk) {
-    stk_assert(stk);
-    for (int i = 1; i < (stk->size) + 1; ++i) {
-        printf("%d ", stk->data[i]);
-    }
-    printf("\n"
-           "%d - capacity\n"
-           "%d - size\n"
-           "%p - pointer on data\n",
-           stk->capacity, stk->size, stk->data);
-
-    return 0;
-}
 
 // ********************************************************************************************
 
@@ -202,15 +220,14 @@ int main ()
         assert(0);
     }
 
-    // int k = 1;
     while(1)
     {
-        // printf("We are on %d iteration\n", k++);
 
         int command = 0;
         if (fscanf(f2, "%d", &command) != 1)
         {
             printf("smth went wrong\n");
+            fclose(f2);
             assert(0);
         }
 
@@ -222,6 +239,7 @@ int main ()
                 if (fscanf(f2, "%d\n", &value) != 1)
                 {
                     printf("smth went wrong\n");
+                    fclose(f2);
                     assert(0);
                 }
                 stack_push(&stk, value);
@@ -264,7 +282,12 @@ int main ()
                 int val_1 = 0, val_2 = 0;
                 stack_pop(&stk, &val_1);
                 stack_pop(&stk, &val_2);
-                int temp4 = val_2 / val_1;// TODO
+                if (val_1 == 0) {
+                    printf("attempt to divide on zero");
+                    fclose(f2);
+                    assert(0);
+                }
+                int temp4 = val_2 / val_1;
                 stack_push(&stk, temp4);
                 break;
             }
@@ -273,16 +296,16 @@ int main ()
             {
                 int val = 0;
                 stack_pop(&stk, &val);
-                printf("%d - total", val);
+                printf("%d - total\n", val);
                 break;
             }
 
             default: {
                 break;
             }
-        }
 
-        if (command == HLT) // TODO чтение до конца
+        }
+        if (command == HLT) // NOTE Нужно ли делать какую либо еще проверку?
         {
             fclose(f2);
             break;
