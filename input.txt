@@ -1,9 +1,11 @@
-push 20
-push 80
+push 77
+push 23
 Add
-Push 15
-Push 5
-Add
+push 4
 Div
+push 5
+div
+push 3
+add
 Out
 Hlt
