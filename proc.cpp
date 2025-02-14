@@ -205,10 +205,50 @@ int stack_pop(struct stack *stk, stack_elem *pop_elem) { // NOTE добавит�
 }
 
 
-// ********************************************************************************************
+// ******************************************************************************************** NOTE - PROCESSOR
+const int MAX_REGISTER_SIZE = 20;
+
+struct processor
+{
+    int *code = NULL;
+    int ip = 0;
+    stack_elem register_ax[MAX_REGISTER_SIZE] = {0};
+    int code_size = 0;
+};
+
+int code_fill(FILE *f, struct processor *proc) {
+
+    fscanf(f, "%d", &(proc->code_size));
+    proc->code = (stack_elem *)calloc(proc->code_size, sizeof(stack_elem));
+    if (proc->code == NULL) {
+        printf("memory allocation error");
+        assert(0);
+    }
+
+    int i = 0;
+    int buffer = 0;
+    while(1) {
+
+        if(fscanf(f, "%d", &buffer) == 1) {
+            proc->code[i] = buffer;
+            i++;
+        }
+        else
+        {
+            break;
+        }
+
+    }
+
+    fseek(f, 0, SEEK_SET);
+    return 0;
+}
+
 
 int main ()
 {
+    struct processor proc;  // NOTE Насколько хорошо такое объявление
+
     struct stack stk = {NULL, 0, 0};
 
     stack_constructor(&stk, 10);
@@ -219,6 +259,13 @@ int main ()
         printf("f2 == null");
         assert(0);
     }
+
+    code_fill(f2, &proc);
+    for(int i = 0; i < 13; i++) {
+        printf("%d ", proc.code[i]);
+    }
+    printf("\n");
+
 
     while(1)
     {
