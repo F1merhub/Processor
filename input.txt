@@ -10,6 +10,5 @@ add
 popr rax
 pushr rax
 push 10
-jbe 4
+jb 4
 hlt
-

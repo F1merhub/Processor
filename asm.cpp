@@ -69,15 +69,22 @@ struct labels
     int ip = -1;
 };
 
-int put_label(char *str, labels labels_array[]) { // TODO сделать изменения в случае переполнения массива структур
-    if (strchr(':', str)) {
-            str[strlen(str) - 1] = '\0';
-            int i = 0;
-            while (labels_array[i].value != )
-        }
-
-
-}
+// int put_label(char *str, labels labels_array[], int code_size) { // TODO сделать изменения в случае переполнения массива структур
+//         str[strlen(str) - 1] = '\0';// TODO проверить нормально ли записались имена меток
+//         int i = 0;
+//         while ((labels_array[i].ip) != -1) {
+//                 i++;
+//                 if (i >= LABELS_MAX_COUNT) {
+//                     printf("labels_array is overflow");
+//                     assert(0);
+//             }
+//         }
+//
+//         strcpy(labels_array[i].value, str);
+//         labels_array[i].ip = code_size;
+//
+//     return 0;
+// }
 
 int put_code_size(FILE *f1, FILE *f2) {
 
@@ -96,50 +103,49 @@ int put_code_size(FILE *f1, FILE *f2) {
             assert(0);
         }
 
-        if (strchr(':', str)) {
-            str[strlen(str) - 1] = '\0';
+        // if (strchr(str, ':'))
+        //     put_label(str, labels_array, code_size);
 
-        }
 
-        int command = get_command(str);
+            int command = get_command(str);
 
-        switch(command) { // TODO Когда проходимся, надо записать метки
-            case 0: // TODO поменять на unknown
-                break;
-            case JMP:
-            case JB:
-            case JBE:
-            case JA:
-            case JAE:
-            case JE:
-            case JNE:
-            case PUSH:
-            case PUSHR:
-            case POPR:
-            {
-                code_size += 2;
-                break;
+            switch(command) { // TODO Когда проходимся, надо записать метки
+                case 0: // TODO поменять на unknown
+                    break;
+                case JMP:
+                case JB:
+                case JBE:
+                case JA:
+                case JAE:
+                case JE:
+                case JNE:
+                case PUSH:
+                case PUSHR:
+                case POPR:
+                {
+                    code_size += 2;
+                    break;
+                }
+
+                case ADD:
+                case MUL:
+                case DIV:
+                case SUB:
+                case OUT:
+                {
+                    code_size += 1;
+                    break;
+                }
+
+
+                default:
+                    break;
             }
 
-            case ADD:
-            case MUL:
-            case DIV:
-            case SUB:
-            case OUT:
-            {
+            if (command == HLT) {
                 code_size += 1;
                 break;
             }
-
-
-            default:
-                break;
-        }
-
-        if (command == HLT) {
-            code_size += 1;
-            break;
-        }
 
     }
 
@@ -168,11 +174,17 @@ int main() {
         assert(0);
     }
 
-    struct labels labels_array[LABELS_MAX_COUNT];
+//     struct labels labels_array[LABELS_MAX_COUNT];
+//
+//     put_code_size(f1, f2, labels_array);
+//         for (int i = 0; i < LABELS_MAX_COUNT; i++ ) {
+//             printf("%d ", labels_array[i].ip);
+//             printf("%s ", labels_array[i].value);
+//         }
 
     put_code_size(f1, f2);
 
-     while(1)
+    while(1)
     {
         const int STR_LEN = 10;
         char str[STR_LEN] = "";
@@ -196,18 +208,72 @@ int main() {
                 case JAE:
                 case JE:
                 case JNE:
-                case PUSH:
                 {
 
                     fprintf(f2, "%d ", command);  // TODO проверки на остальные команды
                     int value = 0;
-                    int k;
                     if (fscanf(f1, "%d", &value) != 1) // NOTE как сделать лучше проверку?
                     {
                         printf("argument should be a number!");
                         fclose(f1);
                         fclose(f2);
-                        printf("\n%d\n", k);
+                        assert(0);
+                    }
+
+                    fprintf(f2, "%d\n", value);
+                    break;
+
+                }
+//                 {
+//
+//                     fprintf(f2, "%d ", command);  // TODO проверки на остальные команды
+//                     char jmp_buffer[20] = "";
+//                     if(fscanf(f1, "%s", jmp_buffer) != 1) {
+//                         printf("smth went wrong");
+//                         fclose(f1);
+//                         fclose(f2);
+//                         assert(0);
+//                     }
+//
+//                     if (strchr(jmp_buffer, ':')) { // переходим в массив по имени
+//                         jmp_buffer[strlen(jmp_buffer) - 1] = '\0';
+//                         int i = 0;
+//                         while (strcmp(labels_array[i].value, jmp_buffer)) {
+//                             i++;
+//                             if (i >= LABELS_MAX_COUNT) {
+//                                 printf("labels_array is overflow");
+//                                 assert(0);
+//                             }
+//                         }
+//                         int value = labels_array[i].ip;
+//                         fprintf(f2, "%d\n", value);
+//                         break;
+//                     }
+//                     else
+//                     {
+//                         int value = 0;
+//                         if((value = strtol(jmp_buffer, NULL, 10)) == 0) {
+//                             printf("JMP arguement should be a number or label");
+//                             fclose(f1);
+//                             fclose(f2);
+//                             assert(0);
+//                         }
+//
+//                         fprintf(f2, "%d\n", value);
+//                         break;
+//                     }
+//                 }
+
+                case PUSH:
+                {
+
+                    fprintf(f2, "%d ", command);  // TODO проверки на остальные команды
+                    int value = 0;
+                    if (fscanf(f1, "%d", &value) != 1) // NOTE как сделать лучше проверку?
+                    {
+                        printf("argument should be a number!");
+                        fclose(f1);
+                        fclose(f2);
                         assert(0);
                     }
 
