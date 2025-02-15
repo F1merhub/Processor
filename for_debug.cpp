@@ -1,15 +1,18 @@
 #include <stdio.h>
 
-    struct processor
-{
-    int *code = NULL;
-    int ip = 4;
-    int register_ax[6] = {0};
-    int code_size = 0;
-};
-    int main() {
-    struct processor proc;
-    printf("%d", proc.ip);
+const int LABELS_MAX_COUNT = 20;
+const int LABELS_MAX_NAME = 20;
 
-    return 0;
-}
+struct labels
+{
+    char c[20] = {'2'};  // NOTE как лучше объявить?
+    int ip = -2;
+};
+
+
+    int main() {
+        struct labels labels_array[LABELS_MAX_COUNT];
+        printf("%c", (labels_array[1].c)[0]);
+        return 0;
+    }
+

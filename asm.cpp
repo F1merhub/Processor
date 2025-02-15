@@ -60,6 +60,25 @@ int get_register_name(const char* str) {
     return 0;
 }
 
+const int LABELS_MAX_COUNT = 20;
+const int LABELS_MAX_NAME = 20;
+
+struct labels
+{
+    char value[20] = {'\0'};  // NOTE как лучше объявить?
+    int ip = -1;
+};
+
+int put_label(char *str, labels labels_array[]) { // TODO сделать изменения в случае переполнения массива структур
+    if (strchr(':', str)) {
+            str[strlen(str) - 1] = '\0';
+            int i = 0;
+            while (labels_array[i].value != )
+        }
+
+
+}
+
 int put_code_size(FILE *f1, FILE *f2) {
 
     int code_size = 0;
@@ -77,6 +96,11 @@ int put_code_size(FILE *f1, FILE *f2) {
             assert(0);
         }
 
+        if (strchr(':', str)) {
+            str[strlen(str) - 1] = '\0';
+
+        }
+
         int command = get_command(str);
 
         switch(command) { // TODO Когда проходимся, надо записать метки
@@ -89,7 +113,7 @@ int put_code_size(FILE *f1, FILE *f2) {
             case JAE:
             case JE:
             case JNE:
-            case PUSH:    // TODO придумвать, что делать с условными переходами
+            case PUSH:
             case PUSHR:
             case POPR:
             {
@@ -106,6 +130,7 @@ int put_code_size(FILE *f1, FILE *f2) {
                 code_size += 1;
                 break;
             }
+
 
             default:
                 break;
@@ -142,6 +167,8 @@ int main() {
         fclose(f2);
         assert(0);
     }
+
+    struct labels labels_array[LABELS_MAX_COUNT];
 
     put_code_size(f1, f2);
 
