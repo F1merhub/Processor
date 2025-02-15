@@ -259,13 +259,33 @@ int push_rax(struct processor *proc, struct stack *stk) {  // TODO нет зак
 int pop_rax(struct processor *proc, struct stack *stk) {
     stack_elem value = 0;
     stack_pop(stk, &value);
-    stack_dump(stk);
     proc->register_ax[proc->register_size] = value;
     proc->register_size++;
 
     return 0;
 }
 
+int JMP_condition(int command, int temp1, int temp2) {
+    switch(command) {
+        case JB:
+            return (temp2 < temp1);
+        case JBE:
+            return (temp2 <= temp1);
+        case JA:
+            return (temp2 > temp1);
+        case JAE:
+            return (temp2 >= temp1);
+        case JE:
+            return (temp2 == temp1);
+        case JNE:
+            return (temp2 != temp1);
+        default:
+        {
+            printf("unknown JMP");
+            assert(0);
+        }
+    }
+}
 
 
 int main ()
@@ -284,7 +304,7 @@ int main ()
     }
 
     code_fill(f2, &proc);
-    for(int i = 0; i < 17; i++) {
+    for(int i = 0; i < 24; i++) {
         printf("%d ", proc.code[i]);
     }
     printf("\n");
@@ -361,13 +381,41 @@ int main ()
             case JMP:
             {
                 int value = proc.code[proc.ip + 1];
-                if (((value + proc.ip) < 0) || ((value + proc.ip) >= proc.code_size)) {
+                if ((value < 0) || (value >= proc.code_size)) {
                     printf("Unappropriate value for jmb!");
                     assert(0);
                 }
-                proc.ip += value;
+                proc.ip = value;
                 break;
             }
+            case JB:
+            case JBE:
+            case JA:
+            case JAE:
+            case JE:
+            case JNE:
+            {
+                int value = proc.code[proc.ip + 1];
+                    if ((value < 0) || (value >= proc.code_size)) {
+                    printf("Unappropriate value for jmb!"); // TODO поставить пробелый перед assert
+                    assert(0);
+                }
+                stack_elem temp1 = 0, temp2 = 0;
+                stack_pop(&stk, &temp1);  // NOTE - можно ли создать функцию копирования элемента по номеру?
+                stack_pop(&stk, &temp2);
+                stack_push(&stk, temp2);
+                stack_push(&stk, temp1);
+                if (JMP_condition(command, temp1, temp2)) {
+                    proc.ip = value;
+                    break;
+                }
+                else
+                {
+                    proc.ip += 2;
+                    break;
+                }
+            }
+
 
             case PUSHR:
             {
@@ -420,7 +468,6 @@ int main ()
 
     }
 
-    stack_dump(&stk);
     stack_destructor(&stk);
 
     return 0;

@@ -1,3 +1,15 @@
-PUSH 80
-ADD
+push 1
+popr rax
+pushr rax
+pushr rax
+mul
+out
+pushr rax
+push 1
+add
+popr rax
+pushr rax
+push 10
+jb 4
+hlt
 

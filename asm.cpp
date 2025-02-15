@@ -6,7 +6,7 @@
 #include <assert.h>
 #include "asm.h"
 
-int get_command(const char* str) { // TODO Добавить pop pushr..
+int get_command(const char* str) {
 
         if (stricmp(str, "Push") == 0)
             return PUSH;
@@ -20,12 +20,27 @@ int get_command(const char* str) { // TODO Добавить pop pushr..
             return DIV;
         if (stricmp(str, "Mul") == 0)
             return MUL;
-        if (stricmp(str, "Jmp") == 0)
-            return JMP;
+
         if (stricmp(str, "Pushr") == 0)
             return PUSHR;
         if (stricmp(str, "Popr") == 0)
             return POPR;
+
+        if (stricmp(str, "Jmp") == 0)
+            return JMP;
+        if (stricmp(str, "Jb") == 0)
+            return JB;
+        if (stricmp(str, "Jbe") == 0)
+            return JBE;
+        if (stricmp(str, "Ja") == 0)
+            return JA;
+        if (stricmp(str, "Jae") == 0)
+            return JAE;
+        if (stricmp(str, "Je") == 0)
+            return JE;
+        if (stricmp(str, "Jne") == 0)
+            return JNE;
+
         if (stricmp(str, "Hlt") == 0)
             return HLT;
 
@@ -68,6 +83,12 @@ int put_code_size(FILE *f1, FILE *f2) {
             case 0: // TODO поменять на unknown
                 break;
             case JMP:
+            case JB:
+            case JBE:
+            case JA:
+            case JAE:
+            case JE:
+            case JNE:
             case PUSH:    // TODO придумвать, что делать с условными переходами
             case PUSHR:
             case POPR:
@@ -142,13 +163,19 @@ int main() {
         switch (command)
             {
                 case JMP:
+                case JB:
+                case JBE:
+                case JA:
+                case JAE:
+                case JE:
+                case JNE:
                 case PUSH:
                 {
 
                     fprintf(f2, "%d ", command);  // TODO проверки на остальные команды
                     int value = 0;
                     int k;
-                    if ((k = fscanf(f1, "%d", &value)) != 1) // NOTE как сделать лучше проверку?
+                    if (fscanf(f1, "%d", &value) != 1) // NOTE как сделать лучше проверку?
                     {
                         printf("argument should be a number!");
                         fclose(f1);

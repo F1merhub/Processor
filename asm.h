@@ -9,12 +9,18 @@ enum command
     DIV = 4,
     MUL = 5,
     OUT = 6,
-    JMP = 7,
-
-
 
     PUSHR = 11,
     POPR = 12,
+
+    JMP = 21,
+    JB = 22,
+    JBE = 23,
+    JA = 24,
+    JAE = 25,
+    JE = 26,
+    JNE = 27,
+
     HLT = -1,
 };
 

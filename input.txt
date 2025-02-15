@@ -7,5 +7,9 @@ out
 pushr rax
 push 1
 add
-out
+popr rax
+pushr rax
+push 10
+jbe 4
 hlt
+
