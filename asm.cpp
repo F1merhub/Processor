@@ -6,7 +6,7 @@
 #include <assert.h>
 #include "asm.h"
 
-int get_command(const char* str) { // TODO Добавить pop pushr.. jmp
+int get_command(const char* str) { // TODO Добавить pop pushr..
 
         if (stricmp(str, "Push") == 0)
             return PUSH;
@@ -20,11 +20,30 @@ int get_command(const char* str) { // TODO Добавить pop pushr.. jmp
             return DIV;
         if (stricmp(str, "Mul") == 0)
             return MUL;
+        if (stricmp(str, "Jmp") == 0)
+            return JMP;
+        if (stricmp(str, "Pushr") == 0)
+            return PUSHR;
+        if (stricmp(str, "Popr") == 0)
+            return POPR;
         if (stricmp(str, "Hlt") == 0)
             return HLT;
 
         return 0;
     }
+
+int get_register_name(const char* str) {
+    if (stricmp(str, "rax") == 0)
+        return rax;
+    if (stricmp(str, "rbx") == 0)
+        return rbx;
+    if (stricmp(str, "rcx") == 0)
+        return rcx;
+    if (stricmp(str, "rdx") == 0)
+        return rdx;
+
+    return 0;
+}
 
 int put_code_size(FILE *f1, FILE *f2) {
 
@@ -41,15 +60,17 @@ int put_code_size(FILE *f1, FILE *f2) {
             fclose(f1);
             fclose(f2);
             assert(0);
-            break;
         }
 
         int command = get_command(str);
 
         switch(command) { // TODO Когда проходимся, надо записать метки
-            case 0:
+            case 0: // TODO поменять на unknown
                 break;
+            case JMP:
             case PUSH:    // TODO придумвать, что делать с условными переходами
+            case PUSHR:
+            case POPR:
             {
                 code_size += 2;
                 break;
@@ -105,7 +126,7 @@ int main() {
 
      while(1)
     {
-        const int STR_LEN = 20;
+        const int STR_LEN = 10;
         char str[STR_LEN] = "";
         if (fscanf(f1, "%s", str) != 1) // NOTE как сделать лучше проверку?
         {
@@ -120,19 +141,20 @@ int main() {
 
         switch (command)
             {
+                case JMP:
                 case PUSH:
                 {
 
-                    fprintf(f2, "%d ", command);  // TODO проверки на команды
+                    fprintf(f2, "%d ", command);  // TODO проверки на остальные команды
                     int value = 0;
-
-                    if (fscanf(f1, "%d", &value) != 1) // NOTE как сделать лучше проверку?
+                    int k;
+                    if ((k = fscanf(f1, "%d", &value)) != 1) // NOTE как сделать лучше проверку?
                     {
-                    printf("smth went wrong");
-                    fclose(f1);
-                    fclose(f2);
-                    assert(0);
-                    break;
+                        printf("argument should be a number!");
+                        fclose(f1);
+                        fclose(f2);
+                        printf("\n%d\n", k);
+                        assert(0);
                     }
 
                     fprintf(f2, "%d\n", value);
@@ -141,33 +163,45 @@ int main() {
                 }
 
                 case ADD:
-                {
-                    fprintf(f2, "%d\n", command);
-                    break;
-                }
-
                 case SUB:
-                {
-                    fprintf(f2, "%d\n", command);
-                    break;
-                }
-
                 case OUT:
-                {
-                    fprintf(f2, "%d\n", command);
-                    break;
-                }
-
                 case DIV:
-                {
-                    fprintf(f2, "%d\n", command);
-                    break;
-                }
-
                 case MUL:
                 {
                     fprintf(f2, "%d\n", command);
                     break;
+                }
+
+                case PUSHR:
+                case POPR:
+                {
+                    fprintf(f2, "%d ", command);
+                    char temp_str[STR_LEN] = "";
+                    if (fscanf(f1, "%s", temp_str) != 1)
+                    {
+                        printf("smth went wrong");
+                        fclose(f1);
+                        fclose(f2);
+                        assert(0);
+                    }
+                    int reg = get_register_name(temp_str);
+                    switch(reg) {
+                        case 0:
+                        {
+                            printf("unknown register");
+                            fclose(f1);
+                            fclose(f2);
+                            assert(0);
+                        }
+                        case rax:
+                        case rbx:
+                        case rcx:
+                        case rdx:
+                            {
+                                fprintf(f2, "%d\n", reg);
+                                break;
+                            }
+                    }
                 }
 
                 default:

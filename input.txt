@@ -1,11 +1,11 @@
-push 77
-push 23
-Add
-push 4
-Div
-push 5
-div
-push 3
+push 1
+popr rax
+pushr rax
+pushr rax
+mul
+out
+pushr rax
+push 1
 add
-Out
-Hlt
+out
+hlt

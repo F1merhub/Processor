@@ -9,10 +9,21 @@ enum command
     DIV = 4,
     MUL = 5,
     OUT = 6,
+    JMP = 7,
+
+
 
     PUSHR = 11,
-
+    POPR = 12,
     HLT = -1,
+};
+
+enum registers
+{
+    rax = 1,
+    rbx = 2,
+    rcx = 3,
+    rdx = 4,
 };
 
 #endif

@@ -212,11 +212,12 @@ struct processor
 {
     int *code = NULL;
     int ip = 0;
-    stack_elem register_ax[MAX_REGISTER_SIZE] = {0};
+    stack_elem register_ax[MAX_REGISTER_SIZE] = {0}; // NOTE - стоил ли заменить на динамический массив? Или объявить как стек?
+    int register_size = 0;
     int code_size = 0;
 };
 
-int code_fill(FILE *f, struct processor *proc) {
+int code_fill(FILE *f, struct processor *proc) { // NOTE передача во все функции указателей файлов, чтобы если что их закрыть
 
     fscanf(f, "%d", &(proc->code_size));
     proc->code = (stack_elem *)calloc(proc->code_size, sizeof(stack_elem));
@@ -245,6 +246,28 @@ int code_fill(FILE *f, struct processor *proc) {
 }
 // NOTE есть ли резон делать функцию распечатки code
 
+int push_rax(struct processor *proc, struct stack *stk) {  // TODO нет закрытия файлов
+    if (proc->register_size <= 0) {
+        printf("bad register size");
+        assert(0);
+    }
+    stack_push(stk, proc->register_ax[proc->register_size - 1]);
+
+    return 0;
+}
+
+int pop_rax(struct processor *proc, struct stack *stk) {
+    stack_elem value = 0;
+    stack_pop(stk, &value);
+    stack_dump(stk);
+    proc->register_ax[proc->register_size] = value;
+    proc->register_size++;
+
+    return 0;
+}
+
+
+
 int main ()
 {
     struct processor proc;  // NOTE Насколько хорошо такое объявление?
@@ -261,7 +284,7 @@ int main ()
     }
 
     code_fill(f2, &proc);
-    for(int i = 0; i < 13; i++) {
+    for(int i = 0; i < 17; i++) {
         printf("%d ", proc.code[i]);
     }
     printf("\n");
@@ -269,6 +292,7 @@ int main ()
     while(proc.ip < proc.code_size) { //NOTE нужно ли это условие?
         int command = proc.code[proc.ip];
         switch (command) {
+
             case PUSH:
             {
                 stack_elem value = proc.code[proc.ip + 1];
@@ -276,6 +300,7 @@ int main ()
                 proc.ip += 2;
                 break;
             }
+
             case ADD: //NOTE подумать надо ли делать проверку на 0 или 1 эл
             {
                 stack_elem temp1 = 0, temp2 = 0, temp3 = 0;
@@ -286,6 +311,7 @@ int main ()
                 proc.ip++;
                 break;
             }
+
             case SUB:
             {
                 stack_elem temp1 = 0, temp2 = 0, temp3 = 0;
@@ -296,6 +322,7 @@ int main ()
                 proc.ip++;
                 break;
             }
+
             case DIV:
             {
                 stack_elem temp1 = 0, temp2 = 0, temp3 = 0;
@@ -310,6 +337,7 @@ int main ()
                 proc.ip++;
                 break;
             }
+
             case MUL:
             {
                 stack_elem temp1 = 0, temp2 = 0, temp3 = 0;
@@ -320,13 +348,65 @@ int main ()
                 proc.ip++;
                 break;
             }
+
             case OUT:
             {
                 stack_elem result = 0;
                 stack_pop(&stk, &result);
-                printf("\ntotal - %d\n", result);
+                printf("\nOUT : %d\n", result);
                 proc.ip++;
                 break;
+            }
+
+            case JMP:
+            {
+                int value = proc.code[proc.ip + 1];
+                if (((value + proc.ip) < 0) || ((value + proc.ip) >= proc.code_size)) {
+                    printf("Unappropriate value for jmb!");
+                    assert(0);
+                }
+                proc.ip += value;
+                break;
+            }
+
+            case PUSHR:
+            {
+                switch(proc.code[proc.ip + 1]) {
+                    case rax:
+                    case rbx:
+                    case rcx:
+                    case rdx:
+                    {
+                        push_rax(&proc, &stk);
+                        proc.ip+=2;
+                        break;
+                    }
+                    default:
+                        break;
+                }
+
+                break;
+
+            }
+
+            case POPR:
+            {
+                switch(proc.code[proc.ip + 1]) {
+                    case rax:
+                    case rbx:
+                    case rcx:
+                    case rdx:
+                    {
+                        pop_rax(&proc, &stk);
+                        proc.ip+=2;
+                        break;
+                    }
+                    default:
+                        break;
+                }
+
+                break;
+
             }
             default:
                 break;
@@ -339,97 +419,8 @@ int main ()
         }
 
     }
-//     while(1)   // NOTE весь цикл считывал числа из code.txt и выполнял базовые операции
-//     {
-//
-//         int command = 0;
-//         if (fscanf(f2, "%d", &command) != 1)
-//         {
-//             printf("smth went wrong\n");
-//             fclose(f2);
-//             assert(0);
-//         }
-//
-//         switch (command)
-//         {
-//             case PUSH:
-//             {
-//                 int value = 0;
-//                 if (fscanf(f2, "%d\n", &value) != 1)
-//                 {
-//                     printf("smth went wrong\n");
-//                     fclose(f2);
-//                     assert(0);
-//                 }
-//                 stack_push(&stk, value);
-//
-//                 break;
-//             }
-//
-//             case ADD:
-//             {
-//                 int val_1 = 0, val_2 = 0;
-//                 stack_pop(&stk, &val_1);
-//                 stack_pop(&stk, &val_2);
-//                 int temp1 = val_1 + val_2;
-//                 stack_push(&stk, temp1);
-//                 break;
-//             }
-//
-//             case SUB:
-//             {
-//                 int val_1 = 0, val_2 = 0;
-//                 stack_pop(&stk, &val_1);
-//                 stack_pop(&stk, &val_2);
-//                 int temp2 = val_2 - val_1;
-//                 stack_push(&stk, temp2);
-//                 break;
-//             }
-//
-//             case MUL:
-//             {
-//                 int val_1 = 0, val_2 = 0;
-//                 stack_pop(&stk, &val_1);
-//                 stack_pop(&stk, &val_2);
-//                 int temp3 = val_1 * val_2;
-//                 stack_push(&stk, temp3);
-//                 break;
-//             }
-//
-//             case DIV:
-//             {
-//                 int val_1 = 0, val_2 = 0;
-//                 stack_pop(&stk, &val_1);
-//                 stack_pop(&stk, &val_2);
-//                 if (val_1 == 0) {
-//                     printf("attempt to divide on zero");
-//                     fclose(f2);
-//                     assert(0);
-//                 }
-//                 int temp4 = val_2 / val_1;
-//                 stack_push(&stk, temp4);
-//                 break;
-//             }
-//
-//             case OUT:
-//             {
-//                 int val = 0;
-//                 stack_pop(&stk, &val);
-//                 printf("%d - total\n", val);
-//                 break;
-//             }
-//
-//             default: {
-//                 break;
-//             }
-//
-//         }
-//         if (command == HLT) // NOTE Нужно ли делать какую либо еще проверку?
-//         {
-//             fclose(f2);
-//             break;
-//         }
-//     }
+
+    stack_dump(&stk);
     stack_destructor(&stk);
 
     return 0;
