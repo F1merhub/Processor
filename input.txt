@@ -1,5 +1,6 @@
 push 1
 popr rax
+label_1:
 pushr rax
 pushr rax
 mul
@@ -10,5 +11,10 @@ add
 popr rax
 pushr rax
 push 10
-jb 4
+jbe :label_1
 hlt
+
+
+
+
+

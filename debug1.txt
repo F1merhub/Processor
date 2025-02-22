@@ -1,0 +1,10 @@
+push 2
+push 3
+3:
+add
+5:
+pushr rax
+jmp :3
+je :5
+out
+hlt

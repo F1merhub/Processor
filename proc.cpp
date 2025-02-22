@@ -5,9 +5,9 @@
 #include "proc.h"
 #include "asm.h"
 
-typedef int stack_elem;   // NOTE заменил double на int
+typedef int stack_elem;
 // TODO сделать typedef для спецификаторов
-struct stack
+struct Stack
 {
     stack_elem* data;
     int size;
@@ -32,29 +32,29 @@ enum errorcode
     BAD_CANARY_2 =                  8,  // правая канарейка
 };
 
-int verificator(struct stack *stk)
+int verificator(struct Stack *Stk)
 {
     int error = 0;
 
-    if (stk == NULL)
+    if (Stk == NULL)
         error = STK_NULL_POINTER;
 
-    if (stk->data == NULL)
+    if (Stk->data == NULL)
         error = STK_OUT_MEMORY;
 
-    if (stk->size < 0)
+    if (Stk->size < 0)
         error = STK_BAD_SIZE;
 
-    if (stk->capacity <= 0)
+    if (Stk->capacity <= 0)
         error = STK_BAD_CAPACITY;
 
-    if (stk->size > stk->capacity)
+    if (Stk->size > Stk->capacity)
         error = STK_SIZE_LARGER_CAPACITY;
 
-    if (stk->data[0] != CANARY)
+    if (Stk->data[0] != CANARY)
         error = BAD_CANARY_1;
 
-    if (stk->data[stk->capacity + 1] != CANARY)
+    if (Stk->data[Stk->capacity + 1] != CANARY)
         error = BAD_CANARY_2;
 
     return error;
@@ -65,11 +65,11 @@ const char* decoder(int error) {
         case(STK_OUT_MEMORY):
             return "memory allocation error\n";
         case(STK_NULL_POINTER):
-            return "stack pointer is null\n";
+            return "Stack pointer is null\n";
         case(STK_BAD_SIZE):
-            return "stack size < 0\n";
+            return "Stack size < 0\n";
         case(STK_BAD_CAPACITY):
-            return "stack capacity <= 0\n";
+            return "Stack capacity <= 0\n";
         case(STK_SIZE_LARGER_CAPACITY):
             return "size > capacity\n";
         case(BAD_CANARY_1):
@@ -81,125 +81,125 @@ const char* decoder(int error) {
     }
 }
 
-int stack_dump(struct stack *stk) {
-    for (int i = 1; i < (stk->size) + 1; ++i) {
-        printf("%d ", stk->data[i]);
+int stack_dump(struct Stack *Stk) {
+    for (int i = 1; i < (Stk->size) + 1; ++i) {
+        printf("%d ", Stk->data[i]);
     }
     printf("\n"
            "%d - capacity\n"
            "%d - size\n"
            "%p - pointer on data\n",
-           stk->capacity, stk->size, stk->data);
+           Stk->capacity, Stk->size, Stk->data);
     return 0;
 }
 
-int stk_assert(struct stack *stk) {
-    int error = verificator(stk);
+int stk_assert(struct Stack *Stk) {
+    int error = verificator(Stk);
     if (error) {
         printf("%s", decoder(error));
-        stack_dump(stk);
+        stack_dump(Stk);
         assert(0);
     }
     return 0;
 }
 
 
-int stk_null_check(struct stack *stk) {
-    if (stk == NULL) {
-        printf("stk pointer is NULL\n");
+int stk_null_check(struct Stack *Stk) {
+    if (Stk == NULL) {
+        printf("Stk pointer is NULL\n");
         assert(0);
     }
     return 0;
 }
 
-int put_canary(struct stack *stk)
+int put_canary(struct Stack *Stk)
 {
-    stk_null_check(stk);
-    stk->data[0] = CANARY;
-    stk->data[stk->capacity + 1] = CANARY;
+    stk_null_check(Stk);
+    Stk->data[0] = CANARY;
+    Stk->data[Stk->capacity + 1] = CANARY;
 
     return 0;
 }
 
 
-int stack_destructor(struct stack* stk) {
-    stk_null_check(stk);
-    for (int i = 0; i < stk->capacity + 1; ++i)
-        stk->data[i] = POISON;
-    free(stk->data);
-    stk->data = NULL;
-    stk->capacity = 0;
-    stk->size = 0;
+int stack_destructor(struct Stack* Stk) {
+    stk_null_check(Stk);
+    for (int i = 0; i < Stk->capacity + 1; ++i)
+        Stk->data[i] = POISON;
+    free(Stk->data);
+    Stk->data = NULL;
+    Stk->capacity = 0;
+    Stk->size = 0;
 
     return 0;
 }
 
 
-int stack_constructor(struct stack * stk, int capacity) {
+int stack_constructor(struct Stack * Stk, int capacity) {
 
-    stk_null_check(stk);
+    stk_null_check(Stk);
 
     if (capacity <= 0) {
         printf("capacity is not positive\n");
         assert(0);
     }
 
-    stk->data = (stack_elem *)calloc(capacity + 2, sizeof(stack_elem));
-    if (stk->data == NULL) {
+    Stk->data = (stack_elem *)calloc(capacity + 2, sizeof(stack_elem));
+    if (Stk->data == NULL) {
         printf("memory allocation error\n");
         assert(0);
     }
 
-    stk->size = 0;
-    stk->capacity = capacity;
-    put_canary(stk);
-    stk_assert(stk);
+    Stk->size = 0;
+    Stk->capacity = capacity;
+    put_canary(Stk);
+    stk_assert(Stk);
 
     return 0;
 }
 
-int realloc_up(struct stack *stk) {
-    stk_assert(stk);
+int realloc_up(struct Stack *Stk) {
+    stk_assert(Stk);
     if (increase_coefficient <= 0) {
         printf("change increase_coefficient\n");
         assert(0);
     }
-    stack_elem *new_ptr = (stack_elem *)realloc(stk->data, (stk -> capacity + 2 + increase_coefficient) * sizeof(stack_elem));
+    stack_elem *new_ptr = (stack_elem *)realloc(Stk->data, (Stk -> capacity + 2 + increase_coefficient) * sizeof(stack_elem));
     if(new_ptr == NULL) {
         printf("memory reallocation error\n");
         assert(0);
     }
-    stk->data = new_ptr;
-    stk->capacity = stk->capacity + increase_coefficient;
-    stk->data[stk->capacity + 1] = CANARY;
+    Stk->data = new_ptr;
+    Stk->capacity = Stk->capacity + increase_coefficient;
+    Stk->data[Stk->capacity + 1] = CANARY;
     return 0;
 }
 
 
 
-int stack_push(struct stack *stk, stack_elem value) {
-    stk_assert(stk);
-    if (stk->size  == stk->capacity) {
-        realloc_up(stk);
+int stack_push(struct Stack *Stk, stack_elem value) {
+    stk_assert(Stk);
+    if (Stk->size  == Stk->capacity) {
+        realloc_up(Stk);
     }
 
-    stk->data[stk->size + 1] = value;
-    (stk->size)++;
-    stk_assert(stk);
+    Stk->data[Stk->size + 1] = value;
+    (Stk->size)++;
+    stk_assert(Stk);
 
     return 0;
 }
 
-int stack_pop(struct stack *stk, stack_elem *pop_elem) { // NOTE добавить реаллок вниз
-    stk_assert(stk);
-    if (stk->size  == 0) {
-        printf("empty stack\n");
+int stack_pop(struct Stack *Stk, stack_elem *pop_elem) {
+    stk_assert(Stk);
+    if (Stk->size  == 0) {
+        printf("empty Stack\n");
         assert(0);
     }
-    stk->size--;
-    *pop_elem = stk->data[stk->size + 1];
-    stk->data[stk->size + 1] = POISON;
-    stk_assert(stk);
+    Stk->size--;
+    *pop_elem = Stk->data[Stk->size + 1];
+    Stk->data[Stk->size + 1] = POISON;
+    stk_assert(Stk);
 
     return 0;
 }
@@ -208,16 +208,16 @@ int stack_pop(struct stack *stk, stack_elem *pop_elem) { // NOTE добавит�
 // ******************************************************************************************** NOTE - PROCESSOR
 const int MAX_REGISTER_SIZE = 20;
 
-struct processor
+struct Processor // processor - Processor
 {
     int *code = NULL;
     int ip = 0;
-    stack_elem register_ax[MAX_REGISTER_SIZE] = {0}; // NOTE - стоил ли заменить на динамический массив? Или объявить как стек?
+    stack_elem register_ax[MAX_REGISTER_SIZE] = {0};
     int register_size = 0;
     int code_size = 0;
 };
 
-int code_fill(FILE *f, struct processor *proc) { // NOTE передача во все функции указателей файлов, чтобы если что их закрыть
+int code_fill(FILE *f, struct Processor *proc) {
 
     fscanf(f, "%d", &(proc->code_size));
     proc->code = (stack_elem *)calloc(proc->code_size, sizeof(stack_elem));
@@ -228,7 +228,7 @@ int code_fill(FILE *f, struct processor *proc) { // NOTE передача во �
 
     int i = 0;
     int buffer = 0;
-    while(1) {
+    while(1) { // TODO занести в цикл
 
         if(fscanf(f, "%d", &buffer) == 1) {
             proc->code[i] = buffer;
@@ -241,24 +241,22 @@ int code_fill(FILE *f, struct processor *proc) { // NOTE передача во �
 
     }
 
-    fseek(f, 0, SEEK_SET);
     return 0;
 }
-// NOTE есть ли резон делать функцию распечатки code
 
-int push_rax(struct processor *proc, struct stack *stk) {  // TODO нет закрытия файлов
+int push_rax(struct Processor *proc, struct Stack *Stk) {
     if (proc->register_size <= 0) {
         printf("bad register size");
         assert(0);
     }
-    stack_push(stk, proc->register_ax[proc->register_size - 1]);
+    stack_push(Stk, proc->register_ax[proc->register_size - 1]);
 
     return 0;
 }
 
-int pop_rax(struct processor *proc, struct stack *stk) {
+int pop_rax(struct Processor *proc, struct Stack *Stk) {
     stack_elem value = 0;
-    stack_pop(stk, &value);
+    stack_pop(Stk, &value);
     proc->register_ax[proc->register_size] = value;
     proc->register_size++;
 
@@ -290,11 +288,11 @@ int JMP_condition(int command, int temp1, int temp2) {
 
 int main ()
 {
-    struct processor proc;  // NOTE Насколько хорошо такое объявление?
+    struct Processor proc;
 
-    struct stack stk = {NULL, 0, 0};
+    struct Stack Stk = {NULL, 0, 0};
 
-    stack_constructor(&stk, 10);
+    stack_constructor(&Stk, 10);
 
     FILE *f2 = fopen("code.txt", "r");
     if (f2 == NULL)
@@ -304,30 +302,30 @@ int main ()
     }
 
     code_fill(f2, &proc);
-    for(int i = 0; i < 24; i++) {
+    for(int i = 0; i < 24; i++) { //  NOTE - распечатка
         printf("%d ", proc.code[i]);
     }
     printf("\n");
 
-    while(proc.ip < proc.code_size) { //NOTE нужно ли это условие?
+    while(proc.ip < proc.code_size) {
         int command = proc.code[proc.ip];
         switch (command) {
 
-            case PUSH:
+            case PUSH://TODO исправить копипаст
             {
                 stack_elem value = proc.code[proc.ip + 1];
-                stack_push(&stk, value);
+                stack_push(&Stk, value);
                 proc.ip += 2;
                 break;
             }
 
-            case ADD: //NOTE подумать надо ли делать проверку на 0 или 1 эл
+            case ADD:
             {
                 stack_elem temp1 = 0, temp2 = 0, temp3 = 0;
-                stack_pop(&stk, &temp1);
-                stack_pop(&stk, &temp2);
+                stack_pop(&Stk, &temp1);
+                stack_pop(&Stk, &temp2);
                 temp3 = temp1 + temp2;
-                stack_push(&stk, temp3);
+                stack_push(&Stk, temp3);
                 proc.ip++;
                 break;
             }
@@ -335,10 +333,10 @@ int main ()
             case SUB:
             {
                 stack_elem temp1 = 0, temp2 = 0, temp3 = 0;
-                stack_pop(&stk, &temp1);
-                stack_pop(&stk, &temp2);
+                stack_pop(&Stk, &temp1);
+                stack_pop(&Stk, &temp2);
                 temp3 = temp2 - temp1;
-                stack_push(&stk, temp3);
+                stack_push(&Stk, temp3);
                 proc.ip++;
                 break;
             }
@@ -346,14 +344,14 @@ int main ()
             case DIV:
             {
                 stack_elem temp1 = 0, temp2 = 0, temp3 = 0;
-                stack_pop(&stk, &temp1);
-                stack_pop(&stk, &temp2);
+                stack_pop(&Stk, &temp1);
+                stack_pop(&Stk, &temp2);
                 if (temp1 == 0) {
                     printf("attempt to divide on zero");
                     assert(0);
                 }
                 temp3 = temp2 / temp1;
-                stack_push(&stk, temp3);
+                stack_push(&Stk, temp3);
                 proc.ip++;
                 break;
             }
@@ -361,10 +359,10 @@ int main ()
             case MUL:
             {
                 stack_elem temp1 = 0, temp2 = 0, temp3 = 0;
-                stack_pop(&stk, &temp1);
-                stack_pop(&stk, &temp2);
+                stack_pop(&Stk, &temp1);
+                stack_pop(&Stk, &temp2);
                 temp3 = temp2 * temp1;
-                stack_push(&stk, temp3);
+                stack_push(&Stk, temp3);
                 proc.ip++;
                 break;
             }
@@ -372,7 +370,7 @@ int main ()
             case OUT:
             {
                 stack_elem result = 0;
-                stack_pop(&stk, &result);
+                stack_pop(&Stk, &result);
                 printf("\nOUT : %d\n", result);
                 proc.ip++;
                 break;
@@ -397,14 +395,14 @@ int main ()
             {
                 int value = proc.code[proc.ip + 1];
                     if ((value < 0) || (value >= proc.code_size)) {
-                    printf("Unappropriate value for jmb!"); // TODO поставить пробелый перед assert
+                    printf("Unappropriate value for jmb!");
                     assert(0);
                 }
                 stack_elem temp1 = 0, temp2 = 0;
-                stack_pop(&stk, &temp1);  // NOTE - можно ли создать функцию копирования элемента по номеру?
-                stack_pop(&stk, &temp2);
-                stack_push(&stk, temp2);
-                stack_push(&stk, temp1);
+                stack_pop(&Stk, &temp1);
+                stack_pop(&Stk, &temp2);
+                stack_push(&Stk, temp2);
+                stack_push(&Stk, temp1);
                 if (JMP_condition(command, temp1, temp2)) {
                     proc.ip = value;
                     break;
@@ -425,7 +423,7 @@ int main ()
                     case rcx:
                     case rdx:
                     {
-                        push_rax(&proc, &stk);
+                        push_rax(&proc, &Stk);
                         proc.ip+=2;
                         break;
                     }
@@ -445,7 +443,7 @@ int main ()
                     case rcx:
                     case rdx:
                     {
-                        pop_rax(&proc, &stk);
+                        pop_rax(&proc, &Stk);
                         proc.ip+=2;
                         break;
                     }
@@ -468,7 +466,7 @@ int main ()
 
     }
 
-    stack_destructor(&stk);
+    stack_destructor(&Stk);
 
     return 0;
 }

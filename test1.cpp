@@ -192,6 +192,22 @@ int main() {
                 case JAE:
                 case JE:
                 case JNE:
+//                 {
+//
+//                     fprintf(f2, "%d ", command);
+//                     int value = 0;
+//                     if (fscanf(f1, "%d", &value) != 1)
+//                     {
+//                         printf("argument should be a number!");
+//                         fclose(f1);
+//                         fclose(f2);
+//                         assert(0);
+//                     }
+//
+//                     fprintf(f2, "%d\n", value);
+//                     break;
+//
+//                 }
                 {
 
                     fprintf(f2, "%d ", command);

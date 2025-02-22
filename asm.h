@@ -1,6 +1,16 @@
 #ifndef asm_H
 #define asm_H
 
+const int LABELS_MAX_COUNT = 20;
+const int LABELS_MAX_NAME = 20;
+const int STR_LEN = 20;
+
+struct labels
+{
+    char value[20] = {'\0'};
+    int ip = -1;
+};
+
 enum command
 {
     PUSH = 1,
@@ -21,7 +31,7 @@ enum command
     JE = 26,
     JNE = 27,
 
-    HLT = -1,
+    HLT = -1,// NOTE -1 in case of error
 };
 
 enum registers

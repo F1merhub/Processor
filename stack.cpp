@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-
+// TODO - поменять тип и название структур с заглавными буквами
 typedef double stack_elem;   //FIXME - Просмотреть, где можно заменить типы данных на size_t
 
 struct stack
@@ -39,7 +39,7 @@ int verificator(struct stack *stk)
 
     if (stk->data == NULL)
         error = STK_OUT_MEMORY;
-        
+
     if (stk->size < 0)
         error = STK_BAD_SIZE;
 
