@@ -1,328 +1,266 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include "proc.h"
 #include "asm.h"
+#include "stack.h"
 
-int get_command(const char* str) {
+const int MAX_REGISTER_SIZE = 20;
 
-        if (stricmp(str, "Push") == 0) // NOTE массив структур для комманд
-            return PUSH;
-        if (stricmp(str, "Add") == 0)
-            return ADD;
-        if (stricmp(str, "Sub") == 0)
-            return SUB;
-        if (stricmp(str, "Out") == 0)
-            return OUT;
-        if (stricmp(str, "Div") == 0)
-            return DIV;
-        if (stricmp(str, "Mul") == 0)
-            return MUL;
-
-        if (stricmp(str, "Pushr") == 0)
-            return PUSHR;
-        if (stricmp(str, "Popr") == 0)
-            return POPR;
-
-        if (stricmp(str, "Jmp") == 0)
-            return JMP;
-        if (stricmp(str, "Jb") == 0)
-            return JB;
-        if (stricmp(str, "Jbe") == 0)
-            return JBE;
-        if (stricmp(str, "Ja") == 0)
-            return JA;
-        if (stricmp(str, "Jae") == 0)
-            return JAE;
-        if (stricmp(str, "Je") == 0)
-            return JE;
-        if (stricmp(str, "Jne") == 0)
-            return JNE;
-
-        if (stricmp(str, "Hlt") == 0)
-            return HLT;
-
-        return 0;
-    }
-
-int get_register_name(const char* str) {
-    if (stricmp(str, "rax") == 0)
-        return rax;
-    if (stricmp(str, "rbx") == 0)
-        return rbx;
-    if (stricmp(str, "rcx") == 0)
-        return rcx;
-    if (stricmp(str, "rdx") == 0)
-        return rdx;
-
-    return 0;
-}
-
-int put_label(char *str, labels labels_array[], int code_size) {
-        str[strlen(str) - 1] = '\0';
-        int i = 0;
-        while ((labels_array[i].ip) != -1) {
-                i++;
-                if (i >= LABELS_MAX_COUNT) {
-                    printf("labels_array is overflow");
-                    assert(0);
-            }
-        }
-
-        strcpy(labels_array[i].value, str);
-        labels_array[i].ip = code_size;
-
-    return 0;
-}
-
-int put_code_size(FILE *f1, FILE *f2, labels labels_array[]) {// TODO записать все в буффер
-
+struct Processor
+{
+    int *code = NULL;
+    int ip = 0;
+    stack_elem register_ax[MAX_REGISTER_SIZE] = {0};
+    int register_size = 0;
     int code_size = 0;
+};
 
-    while(1) {
+int code_fill(FILE *f, struct Processor *proc) {
 
-        char str[STR_LEN] = "";
-
-        if (fscanf(f1, "%s ", str) != 1) { // TODO check str size
-            printf("string was not read"); // TODO write in stderr
-            fclose(f1);
-            fclose(f2);
-            assert(0);
-        }
-
-        if ((strchr(str, ':') - str) == strlen(str) - 1)
-            put_label(str, labels_array, code_size);
-
-
-            int command = get_command(str);
-
-            switch(command) {
-                case 0:
-                    break;
-                case JMP:
-                case JB:
-                case JBE:
-                case JA:
-                case JAE:
-                case JE:
-                case JNE:
-                case PUSH:
-                case PUSHR:
-                case POPR:
-                {
-                    code_size += 2;
-                    break;
-                }
-
-                case ADD:
-                case MUL:
-                case DIV:
-                case SUB:
-                case OUT:
-                {
-                    code_size += 1;
-                    break;
-                }
-
-                default:
-                    break;
-            }
-
-            if (command == HLT) {
-                code_size += 1;
-                break;
-            }
-
-    }
-
-    fseek(f1, 0, SEEK_SET);
-    fprintf(f2, "%d\n", code_size);
-    return code_size;
-}
-
-
-int main() {
-
-    FILE *f1 = fopen("input.txt", "r");
-    if (f1 == NULL)
-    {
-        printf("f1 == null");
-        fclose(f1);
+    fscanf(f, "%d", &(proc->code_size));
+    proc->code = (stack_elem *)calloc(proc->code_size, sizeof(stack_elem));
+    if (proc->code == NULL) {
+        printf("memory allocation error");
         assert(0);
     }
 
-    FILE *f2 = fopen("code.txt", "w");
+    int i = 0;
+    int buffer = 0;
+    while(fscanf(f, "%d", &buffer) == 1) {
+        proc->code[i] = buffer;
+        i++;
+    }
+
+    return 0;
+}
+
+int push_rax(struct Processor *proc, struct Stack *Stk) {
+    if (proc->register_size <= 0) {
+        printf("bad register size");
+        assert(0);
+    }
+    stack_push(Stk, proc->register_ax[proc->register_size - 1]);
+
+    return 0;
+}
+
+int pop_rax(struct Processor *proc, struct Stack *Stk) {
+    stack_elem value = 0;
+    stack_pop(Stk, &value);
+    proc->register_ax[proc->register_size] = value;
+    proc->register_size++;
+
+    return 0;
+}
+
+int JMP_condition(int command, int temp1, int temp2) {
+    switch(command) {
+        case JB:
+            return (temp2 < temp1);
+        case JBE:
+            return (temp2 <= temp1);
+        case JA:
+            return (temp2 > temp1);
+        case JAE:
+            return (temp2 >= temp1);
+        case JE:
+            return (temp2 == temp1);
+        case JNE:
+            return (temp2 != temp1);
+        default:
+        {
+            printf("unknown JMP");
+            assert(0);
+        }
+    }
+}
+
+
+int main ()
+{
+    struct Processor proc;
+
+    struct Stack Stk = {NULL, 0, 0};
+
+    stack_constructor(&Stk, 10);
+
+    freopen("error.log", "w", stderr);
+
+    FILE *f2 = fopen("code.txt", "r");
     if (f2 == NULL)
     {
         printf("f2 == null");
-        fclose(f1);
-        fclose(f2);
         assert(0);
     }
 
-    struct labels labels_array[LABELS_MAX_COUNT];
+    code_fill(f2, &proc);
+    for(int i = 0; i < 24; i++) { //  NOTE - распечатка
+        printf("%d ", proc.code[i]);
+    }
+    printf("\n");
 
-    put_code_size(f1, f2, labels_array);
-        for (int i = 0; i < LABELS_MAX_COUNT; i++ ) {
-            printf("%d ", labels_array[i].ip);
-            printf("%s ", labels_array[i].value);
-            printf("\n");
-        }
+    while(proc.ip < proc.code_size) {
+        int command = proc.code[proc.ip];
+        switch (command) {
 
-    while(1)
-    {
-        const int STR_LEN = 10;
-        char str[STR_LEN] = "";
-        if (fscanf(f1, "%s", str) != 1)
-        {
-            printf("smth went wrong");
-            fclose(f1);
-            fclose(f2);
-            assert(0);
-            break;
-        }
-
-        int command = get_command(str);
-
-        switch (command)
+            case PUSH:
             {
-                case JMP:
-                case JB:
-                case JBE:
-                case JA:
-                case JAE:
-                case JE:
-                case JNE:
-//                 {
-//
-//                     fprintf(f2, "%d ", command);
-//                     int value = 0;
-//                     if (fscanf(f1, "%d", &value) != 1)
-//                     {
-//                         printf("argument should be a number!");
-//                         fclose(f1);
-//                         fclose(f2);
-//                         assert(0);
-//                     }
-//
-//                     fprintf(f2, "%d\n", value);
-//                     break;
-//
-//                 }
-                {
-
-                    fprintf(f2, "%d ", command);
-                    char jmp_buffer[20] = "";
-                    if(fscanf(f1, "%s", jmp_buffer) != 1) {
-                        printf("smth went wrong");
-                        fclose(f1);
-                        fclose(f2);
-                        assert(0);
-                    }
-
-                    if (strchr(jmp_buffer, ':') == jmp_buffer) { // переходим в массив по имени
-                        char label_value[20] = {'\0'};
-                        strncpy(label_value, jmp_buffer + 1, strlen(jmp_buffer) - 1);
-
-                        int i = 0;
-                        while (strcmp(labels_array[i].value, label_value)) {
-                            i++;
-                            if (i >= LABELS_MAX_COUNT) {
-                                printf("labels_array is overflow");
-                                assert(0);
-                            }
-                        }
-                        int value = labels_array[i].ip;
-                        fprintf(f2, "%d\n", value);
-                        break;
-                    }
-                    else
-                    {
-                        int value = 0;
-                        if((value = strtol(jmp_buffer, NULL, 10)) == 0) {
-                            printf("JMP arguement should be a number or label");
-                            fclose(f1);
-                            fclose(f2);
-                            assert(0);
-                        }
-
-                        fprintf(f2, "%d\n", value);
-                        break;
-                    }
-                }
-
-                case PUSH:
-                {
-
-                    fprintf(f2, "%d ", command);
-                    int value = 0;
-                    if (fscanf(f1, "%d", &value) != 1) //
-                    {
-                        printf("argument should be a number!");
-                        fclose(f1);
-                        fclose(f2);
-                        assert(0);
-                    }
-
-                    fprintf(f2, "%d\n", value);
-                    break;
-
-                }
-
-                case ADD:
-                case SUB:
-                case OUT:
-                case DIV:
-                case MUL:
-                {
-                    fprintf(f2, "%d\n", command);
-                    break;
-                }
-
-                case PUSHR:
-                case POPR:
-                {
-                    fprintf(f2, "%d ", command);
-                    char temp_str[STR_LEN] = "";
-                    if (fscanf(f1, "%s", temp_str) != 1)
-                    {
-                        printf("smth went wrong");
-                        fclose(f1);
-                        fclose(f2);
-                        assert(0);
-                    }
-                    int reg = get_register_name(temp_str);
-                    switch(reg) {
-                        case 0:
-                        {
-                            printf("unknown register");
-                            fclose(f1);
-                            fclose(f2);
-                            assert(0);
-                        }
-                        case rax:
-                        case rbx:
-                        case rcx:
-                        case rdx:
-                            {
-                                fprintf(f2, "%d\n", reg);
-                                break;
-                            }
-                    }
-                }
-
-                default:
-                    break;
+                stack_elem value = proc.code[proc.ip + 1];
+                stack_push(&Stk, value);
+                proc.ip += 2;
+                break;
             }
 
-        if (command == HLT)
-        {
-            fprintf(f2, "%d\n", command);
+            case ADD:
+            {
+                stack_elem temp1 = 0, temp2 = 0, temp3 = 0;
+                stack_pop(&Stk, &temp1);
+                stack_pop(&Stk, &temp2);
+                temp3 = temp1 + temp2;
+                stack_push(&Stk, temp3);
+                proc.ip++;
+                break;
+            }
+
+            case SUB:
+            {
+                stack_elem temp1 = 0, temp2 = 0, temp3 = 0;
+                stack_pop(&Stk, &temp1);
+                stack_pop(&Stk, &temp2);
+                temp3 = temp2 - temp1;
+                stack_push(&Stk, temp3);
+                proc.ip++;
+                break;
+            }
+
+            case DIV:
+            {
+                stack_elem temp1 = 0, temp2 = 0, temp3 = 0;
+                stack_pop(&Stk, &temp1);
+                stack_pop(&Stk, &temp2);
+                if (temp1 == 0) {
+                    printf("attempt to divide on zero");
+                    assert(0);
+                }
+                temp3 = temp2 / temp1;
+                stack_push(&Stk, temp3);
+                proc.ip++;
+                break;
+            }
+
+            case MUL:
+            {
+                stack_elem temp1 = 0, temp2 = 0, temp3 = 0;
+                stack_pop(&Stk, &temp1);
+                stack_pop(&Stk, &temp2);
+                temp3 = temp2 * temp1;
+                stack_push(&Stk, temp3);
+                proc.ip++;
+                break;
+            }
+
+            case OUT:
+            {
+                stack_elem result = 0;
+                stack_pop(&Stk, &result);
+                printf("\nOUT : %d\n", result);
+                proc.ip++;
+                break;
+            }
+
+            case JMP:
+            {
+                int value = proc.code[proc.ip + 1];
+                if ((value < 0) || (value >= proc.code_size)) {
+                    printf("Unappropriate value for jmb!");
+                    assert(0);
+                }
+                proc.ip = value;
+                break;
+            }
+            case JB:
+            case JBE:
+            case JA:
+            case JAE:
+            case JE:
+            case JNE:
+            {
+                int value = proc.code[proc.ip + 1];
+                    if ((value < 0) || (value >= proc.code_size)) {
+                    printf("Unappropriate value for jmb!");
+                    assert(0);
+                }
+                stack_elem temp1 = 0, temp2 = 0;
+                stack_pop(&Stk, &temp1);
+                stack_pop(&Stk, &temp2);
+                stack_push(&Stk, temp2);
+                stack_push(&Stk, temp1);
+                if (JMP_condition(command, temp1, temp2)) {
+                    proc.ip = value;
+                    break;
+                }
+                else
+                {
+                    proc.ip += 2;
+                    break;
+                }
+            }
+
+
+            case PUSHR:
+            {
+                switch(proc.code[proc.ip + 1]) {
+                    case rax:
+                    case rbx:
+                    case rcx:
+                    case rdx:
+                    {
+                        push_rax(&proc, &Stk);
+                        proc.ip+=2;
+                        break;
+                    }
+                    default:
+                        break;
+                }
+
+                break;
+
+            }
+
+            case POPR:
+            {
+                switch(proc.code[proc.ip + 1]) {
+                    case rax:
+                    case rbx:
+                    case rcx:
+                    case rdx:
+                    {
+                        pop_rax(&proc, &Stk);
+                        proc.ip+=2;
+                        break;
+                    }
+                    default:
+                        break;
+                }
+
+                break;
+
+            }
+            default:
+                break;
+
+        }
+
+        if (command == HLT) {
+            fclose(f2);
             break;
         }
 
     }
 
-    fclose(f1);
-    fclose(f2);
+    stack_destructor(&Stk);
+    fclose(stderr);
     return 0;
 }

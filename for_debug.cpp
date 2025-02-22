@@ -3,10 +3,12 @@
 #include <assert.h>
 #include "asm.h"
 
+#define max_length 5
+
 int main() {
-    char label_value[20] = {'\0'};
-    char jmp_buffer[20] = "abc";
-    strncpy(label_value, jmp_buffer + 1, strlen(jmp_buffer) - 1);
-    printf("%s", label_value);
+    FILE *f = fopen("pupu.txt", "r");
+    char s[10] = {'\0'};
+    fscanf(f, "%5s", s);
+    printf("%s", s);
     return 0;
 }

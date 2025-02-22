@@ -3,68 +3,68 @@
 #include <assert.h>
 #include "asm.h"
 
-int get_command(const char* str) {
+struct Command_Code
+{
+    const char *command;
+    const int code;
+};
 
-        if (stricmp(str, "Push") == 0) // NOTE массив структур для комманд
-            return PUSH;
-        if (stricmp(str, "Add") == 0)
-            return ADD;
-        if (stricmp(str, "Sub") == 0)
-            return SUB;
-        if (stricmp(str, "Out") == 0)
-            return OUT;
-        if (stricmp(str, "Div") == 0)
-            return DIV;
-        if (stricmp(str, "Mul") == 0)
-            return MUL;
 
-        if (stricmp(str, "Pushr") == 0)
-            return PUSHR;
-        if (stricmp(str, "Popr") == 0)
-            return POPR;
+int get_command(const char *str) {
+    struct Command_Code command_array[] = {
+        {"push",    PUSH},
+        {"add",     ADD},
+        {"sub",     SUB},
+        {"out",     OUT},
+        {"div",     DIV},
+        {"mul",     MUL},
+        {"pushr",   PUSHR},
+        {"popr",    POPR},
+        {"jmp",     JMP},
+        {"jb",      JB},
+        {"jbe",     JBE},
+        {"ja",      JA},
+        {"jae",     JAE},
+        {"je",      JE},
+        {"jne",     JNE},
+        {"hlt",     HLT},
+    };
 
-        if (stricmp(str, "Jmp") == 0)
-            return JMP;
-        if (stricmp(str, "Jb") == 0)
-            return JB;
-        if (stricmp(str, "Jbe") == 0)
-            return JBE;
-        if (stricmp(str, "Ja") == 0)
-            return JA;
-        if (stricmp(str, "Jae") == 0)
-            return JAE;
-        if (stricmp(str, "Je") == 0)
-            return JE;
-        if (stricmp(str, "Jne") == 0)
-            return JNE;
-
-        if (stricmp(str, "Hlt") == 0)
-            return HLT;
-
-        return 0;
+    int command_count = sizeof(command_array) / sizeof(command_array[0]);
+    for (int i = 0; i < command_count; i++) {
+        if (strcmp(str, command_array[i].command) == 0)
+            return command_array[i].code;
     }
 
-int get_register_name(const char* str) {
-    if (stricmp(str, "rax") == 0)
-        return rax;
-    if (stricmp(str, "rbx") == 0)
-        return rbx;
-    if (stricmp(str, "rcx") == 0)
-        return rcx;
-    if (stricmp(str, "rdx") == 0)
-        return rdx;
-
-    return 0;
+    return -1;
 }
 
-int put_label(char *str, labels labels_array[], int code_size) {
+int get_register_name(const char* str) {
+    struct Command_Code reg_array[] = {
+        {"rax", rax},
+        {"rbx", rbx},
+        {"rcx", rcx},
+        {"rdx", rdx},
+    };
+
+    int reg_count = sizeof(reg_array) / sizeof(reg_array[0]);
+    for (int i = 0; i < reg_count; i++) {
+        if (strcmp(str, reg_array[i].command) == 0)
+            return reg_array[i].code;
+    }
+
+    return 0;
+
+}
+
+int put_label(char *str, labels labels_array[], int code_size, int * put_label_error) {
         str[strlen(str) - 1] = '\0';
         int i = 0;
         while ((labels_array[i].ip) != -1) {
                 i++;
                 if (i >= LABELS_MAX_COUNT) {
-                    printf("labels_array is overflow");
-                    assert(0);
+                    fprintf(stderr, "labels_array is overflow");
+                    *put_label_error = -1;
             }
         }
 
@@ -74,30 +74,24 @@ int put_label(char *str, labels labels_array[], int code_size) {
     return 0;
 }
 
-int put_code_size(FILE *f1, FILE *f2, labels labels_array[]) {// TODO записать все в буффер
+int put_code_size(FILE *f1, FILE *f2, labels labels_array[], int * put_label_error) {
 
     int code_size = 0;
 
     while(1) {
 
         char str[STR_LEN] = "";
-
-        if (fscanf(f1, "%s ", str) != 1) { // TODO check str size
-            printf("string was not read"); // TODO write in stderr
-            fclose(f1);
-            fclose(f2);
-            assert(0);
+        if (fscanf(f1, "%20s ", str) != 1) {
+            fprintf(stderr, "string was not read");
+            return -1;
         }
 
         if ((strchr(str, ':') - str) == strlen(str) - 1)
-            put_label(str, labels_array, code_size);
-
+            put_label(str, labels_array, code_size, put_label_error);
 
             int command = get_command(str);
 
             switch(command) {
-                case 0:
-                    break;
                 case JMP:
                 case JB:
                 case JBE:
@@ -142,27 +136,31 @@ int put_code_size(FILE *f1, FILE *f2, labels labels_array[]) {// TODO запис
 
 int main() {
 
+    freopen("error.log", "w", stderr);
+
     FILE *f1 = fopen("input.txt", "r");
     if (f1 == NULL)
     {
-        printf("f1 == null");
-        fclose(f1);
+        fprintf(stderr, "f1 == null");
         assert(0);
     }
 
     FILE *f2 = fopen("code.txt", "w");
     if (f2 == NULL)
     {
-        printf("f2 == null");
-        fclose(f1);
-        fclose(f2);
+        fprintf(stderr, "f2 == null");
         assert(0);
     }
 
     struct labels labels_array[LABELS_MAX_COUNT];
 
-    put_code_size(f1, f2, labels_array);
-        for (int i = 0; i < LABELS_MAX_COUNT; i++ ) {
+    int put_label_error = 0;
+    int put_code_size_error = put_code_size(f1, f2, labels_array, &put_label_error);
+    if (put_code_size_error == -1)
+        return -1;
+    if (put_label_error == -1)
+        return -1;
+        for (int i = 0; i < LABELS_MAX_COUNT; i++ ) { // NOTE распечатка
             printf("%d ", labels_array[i].ip);
             printf("%s ", labels_array[i].value);
             printf("\n");
@@ -170,15 +168,14 @@ int main() {
 
     while(1)
     {
-        const int STR_LEN = 10;
+        const int STR_LEN = 20;
         char str[STR_LEN] = "";
-        if (fscanf(f1, "%s", str) != 1)
+        if (fscanf(f1, "%20s", str) != 1)
         {
-            printf("smth went wrong");
+            fprintf(stderr, "string was not read");
             fclose(f1);
             fclose(f2);
-            assert(0);
-            break;
+            return -1;
         }
 
         int command = get_command(str);
@@ -196,14 +193,14 @@ int main() {
 
                     fprintf(f2, "%d ", command);
                     char jmp_buffer[20] = "";
-                    if(fscanf(f1, "%s", jmp_buffer) != 1) {
-                        printf("smth went wrong");
+                    if(fscanf(f1, "%20s", jmp_buffer) != 1) {
+                        fprintf(stderr, "string was not read");
                         fclose(f1);
                         fclose(f2);
-                        assert(0);
+                        return -1;
                     }
 
-                    if (strchr(jmp_buffer, ':') == jmp_buffer) { // переходим в массив по имени
+                    if (strchr(jmp_buffer, ':') == jmp_buffer) {
                         char label_value[20] = {'\0'};
                         strncpy(label_value, jmp_buffer + 1, strlen(jmp_buffer) - 1);
 
@@ -211,8 +208,10 @@ int main() {
                         while (strcmp(labels_array[i].value, label_value)) {
                             i++;
                             if (i >= LABELS_MAX_COUNT) {
-                                printf("labels_array is overflow");
-                                assert(0);
+                                fprintf(stderr, "labels_array is overflow");
+                                fclose(f1);
+                                fclose(f2);
+                                return -1;
                             }
                         }
                         int value = labels_array[i].ip;
@@ -223,10 +222,10 @@ int main() {
                     {
                         int value = 0;
                         if((value = strtol(jmp_buffer, NULL, 10)) == 0) {
-                            printf("JMP arguement should be a number or label");
+                            fprintf(stderr, "JMP arguement should be a number or label");
                             fclose(f1);
                             fclose(f2);
-                            assert(0);
+                            return -1;
                         }
 
                         fprintf(f2, "%d\n", value);
@@ -241,10 +240,10 @@ int main() {
                     int value = 0;
                     if (fscanf(f1, "%d", &value) != 1) //
                     {
-                        printf("argument should be a number!");
+                        fprintf(stderr, "push arguement was not read");
                         fclose(f1);
                         fclose(f2);
-                        assert(0);
+                        return -1;
                     }
 
                     fprintf(f2, "%d\n", value);
@@ -267,21 +266,21 @@ int main() {
                 {
                     fprintf(f2, "%d ", command);
                     char temp_str[STR_LEN] = "";
-                    if (fscanf(f1, "%s", temp_str) != 1)
+                    if (fscanf(f1, "%20s", temp_str) != 1)
                     {
-                        printf("smth went wrong");
+                        fprintf(stderr, "register was not read");
                         fclose(f1);
                         fclose(f2);
-                        assert(0);
+                        return -1;
                     }
                     int reg = get_register_name(temp_str);
                     switch(reg) {
                         case 0:
                         {
-                            printf("unknown register");
+                            fprintf(stderr, "unknown register");
                             fclose(f1);
                             fclose(f2);
-                            assert(0);
+                            return -1;
                         }
                         case rax:
                         case rbx:
@@ -306,6 +305,7 @@ int main() {
 
     }
 
+    fclose(stderr);
     fclose(f1);
     fclose(f2);
     return 0;

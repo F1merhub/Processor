@@ -1,9 +1,9 @@
 #ifndef asm_H
 #define asm_H
 
-const int LABELS_MAX_COUNT = 20;
-const int LABELS_MAX_NAME = 20;
-const int STR_LEN = 20;
+const int LABELS_MAX_COUNT = 20; // длина массива структур с метками
+const int LABELS_MAX_NAME = 20; // максимальная длина меток
+const int STR_LEN = 20; // максимальная длина комманды
 
 struct labels
 {
@@ -31,7 +31,7 @@ enum command
     JE = 26,
     JNE = 27,
 
-    HLT = -1,// NOTE -1 in case of error
+    HLT = 0,// NOTE -1 in case of error
 };
 
 enum registers

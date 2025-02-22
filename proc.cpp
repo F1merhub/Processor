@@ -6,7 +6,7 @@
 #include "asm.h"
 
 typedef int stack_elem;
-// TODO сделать typedef для спецификаторов
+
 struct Stack
 {
     stack_elem* data;
@@ -208,7 +208,7 @@ int stack_pop(struct Stack *Stk, stack_elem *pop_elem) {
 // ******************************************************************************************** NOTE - PROCESSOR
 const int MAX_REGISTER_SIZE = 20;
 
-struct Processor // processor - Processor
+struct Processor
 {
     int *code = NULL;
     int ip = 0;
@@ -228,17 +228,9 @@ int code_fill(FILE *f, struct Processor *proc) {
 
     int i = 0;
     int buffer = 0;
-    while(1) { // TODO занести в цикл
-
-        if(fscanf(f, "%d", &buffer) == 1) {
-            proc->code[i] = buffer;
-            i++;
-        }
-        else
-        {
-            break;
-        }
-
+    while(fscanf(f, "%d", &buffer) == 1) {
+        proc->code[i] = buffer;
+        i++;
     }
 
     return 0;
@@ -294,6 +286,8 @@ int main ()
 
     stack_constructor(&Stk, 10);
 
+    freopen("error.log", "w", stderr);
+
     FILE *f2 = fopen("code.txt", "r");
     if (f2 == NULL)
     {
@@ -311,7 +305,7 @@ int main ()
         int command = proc.code[proc.ip];
         switch (command) {
 
-            case PUSH://TODO исправить копипаст
+            case PUSH:
             {
                 stack_elem value = proc.code[proc.ip + 1];
                 stack_push(&Stk, value);
@@ -467,6 +461,6 @@ int main ()
     }
 
     stack_destructor(&Stk);
-
+    fclose(stderr);
     return 0;
 }
