@@ -5,7 +5,13 @@ const int LABELS_MAX_COUNT = 20; // длина массива структур �
 const int LABELS_MAX_NAME = 20; // максимальная длина меток
 const int STR_LEN = 20; // максимальная длина комманды
 
-struct labels
+struct Command_Code
+{
+    const char *command;
+    const int code;
+};
+
+struct Labels
 {
     char value[20] = {'\0'};
     int ip = -1;
@@ -22,6 +28,8 @@ enum command
 
     PUSHR = 11,
     POPR = 12,
+    // PUSHM = 13,
+    // POPM = 14,
 
     JMP = 21,
     JB = 22,
@@ -31,7 +39,7 @@ enum command
     JE = 26,
     JNE = 27,
 
-    HLT = 0,// NOTE -1 in case of error
+    HLT = 0,
 };
 
 enum registers
